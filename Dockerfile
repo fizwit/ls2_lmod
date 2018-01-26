@@ -1,4 +1,4 @@
-FROM fredhutch/ls2_ubuntu:16.04_20180125
+FROM fredhutch/ls2_ubuntu:16.04_20180126
 # Remember, default user is LS2_USERNAME, not root
 
 # These must be specified
@@ -10,7 +10,8 @@ ARG DEPLOY_PREFIX=/app
 ENV DEPLOY_PREFIX=${DEPLOY_PREFIX}
 
 # copy in scripts and files
-COPY install_lmod.sh /home/${LS2_USERNAME}/.ls2/
+COPY install_lmod.sh /ls2/
+COPY deploy_lmod.sh /ls2/
 
 # OS Packages
 #   Our Environment Modules implementation, Lmod, needs lua
@@ -27,16 +28,17 @@ RUN mkdir ${DEPLOY_PREFIX} && chown ${LS2_UID}.${LS2_GID} ${DEPLOY_PREFIX}
 
 # install and uninstall build-essential in one step to reduce layer size
 # while installing Lmod, again must be root
-RUN apt-get install -y build-essential && \
-    su -c "DEPLOY_PREFIX=${DEPLOY_PREFIX} LMOD_VER=${LMOD_VER} LS2_USERNAME=${LS2_USERNAME} /bin/bash /home/${LS2_USERNAME}/.ls2/install_lmod.sh" - ${LS2_USERNAME} && \
-    AUTO_ADDED_PKGS=$(apt-mark showauto) apt-get remove -y --purge build-essential ${AUTO_ADDED_PKGS} && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get install -y build-essential \
+    && su -c "/bin/bash /ls2/install_lmod.sh" ${LS2_USERNAME} \
+    && AUTO_ADDED_PKGS=$(apt-mark showauto) apt-get remove -y --purge build-essential ${AUTO_ADDED_PKGS} \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# gather installed pkgs list
+RUN dpkg -l > /ls2/installed_pkgs.lmod
 
 # switch to LS2 user for future actions
 USER ${LS2_USERNAME}
 WORKDIR /home/${LS2_USERNAME}
 SHELL ["/bin/bash", "-c"]
 
-# gather installed pkgs list
-RUN dpkg -l > /home/${LS2_USERNAME}/.ls2/installed_pkgs.lmod
