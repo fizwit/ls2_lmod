@@ -29,6 +29,7 @@ RUN mkdir ${DEPLOY_PREFIX} && chown ${LS2_UID}.${LS2_GID} ${DEPLOY_PREFIX}
 # install and uninstall build-essential in one step to reduce layer size
 # while installing Lmod, again must be root
 RUN apt-get install -y build-essential \
+    && apt-get install -y libnet-ssleay-perl \
     && su -c "/bin/bash /ls2/install_lmod.sh" ${LS2_USERNAME} \
     && AUTO_ADDED_PKGS=$(apt-mark showauto) apt-get remove -y --purge build-essential ${AUTO_ADDED_PKGS} \
     && apt-get autoremove -y \
